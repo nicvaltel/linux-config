@@ -1,0 +1,1 @@
+/home/kolay/.xmonad/xmonad.hs

@@ -1,0 +1,1 @@
+/home/kolay/.config/xmobar/free_disk.sh
