@@ -1,0 +1,1 @@
+/home/kolay/.config/xmobar/get_battery.sh

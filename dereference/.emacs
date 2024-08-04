@@ -174,7 +174,7 @@
 	 [default default default italic underline success warning error])
  '(ansi-color-names-vector
 	 ["#242424" "#e5786d" "#95e454" "#cae682" "#8ac6f2" "#333366" "#ccaa8f" "#f6f3e8"])
- '(custom-enabled-themes '(misterioso))
+ '(custom-enabled-themes '(dichromacy))
  '(ispell-dictionary nil)
  '(package-selected-packages '(haskell-mode use-package smex)))
 (custom-set-faces

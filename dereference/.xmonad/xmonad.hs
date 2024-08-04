@@ -14,10 +14,11 @@ import XMonad.Util.EZConfig (additionalKeys)
 import XMonad.Util.SessionStart(doOnce)
 import XMonad.Util.SpawnOnce (spawnOnce, spawnOnOnce)
 import XMonad.Util.Run (spawnPipe, hPutStrLn)
+import qualified XMonad.Util.Loggers as Loggers 
 import qualified Data.Map as M
 import qualified XMonad.Layout.Dwindle as Dwindle
 import qualified XMonad.Hooks.DynamicLog as DL
-
+import GHC.IO.Handle(Handle)
 
 -- TODO : The ewmhFullscreen function does not exist in these versions. Instead of it, you can try to add fullscreenEventHook to your handleEventHook to achieve similar functionality (how to do this is explained in the documentation of XMonad.Hooks.EwmhDesktops
 main = do
@@ -35,7 +36,7 @@ main = do
         startupHook = myStartupHook,
         workspaces = myWorkspaces,
         manageHook = manageSpawn <+> manageHook def, -- manageSpawn need for spawnOn/spawnOnOnce 
-        logHook =  myLogHook xmproc
+        logHook =  myXmobarLogHook xmproc
       } `additionalKeys` (myAdditionalKeys modm)
   where
     modm = mod4Mask
@@ -98,20 +99,29 @@ myStartupHook = do
   -- spawnOnce "feh --bg-center --no-fehbg ~/my/wallpapers/composition-a-xxi-1925.jpg"
   spawnOnce "feh --bg-max --no-fehbg ~/my/wallpapers/geysha.png"
   spawnOnOnce "9" "x-terminal-emulator -e ~/hacky.sh ~/.xmonad/vpn.sh"
+  spawn "numlockx on"
 
 
-myXmobarPP :: PP
-myXmobarPP = def
-    { ppSep             = magenta " • "
+myXmobarLogHook :: Handle -> X ()
+myXmobarLogHook proc = dynamicLogWithPP $ DL.xmobarPP
+    { ppOutput  = hPutStrLn proc
+    , ppSep             = magenta " • "
     , ppTitleSanitize   = DL.xmobarStrip
-    -- , ppCurrent         = wrap " " "" . xmobarBorder "Top" "#8be9fd" 2
     , ppHidden          = white . wrap " " ""
     , ppHiddenNoWindows = lowWhite . DL.wrap " " ""
     , ppUrgent          = red . wrap (yellow "!") (yellow "!")
-    , ppOrder           = \[ws, l, _, wins] -> [ws, l, wins]
-    -- , ppExtras          = [logTitles formatFocused formatUnfocused]
+    , ppLayout          = const "" 
+    , ppTitle           = titleStyle
+    -- , ppOrder           = \[ws, l, wins] -> [l, ws, wins]
+    , ppCurrent         = magenta . wrap "<" ">"
+    -- , ppExtras          = [Loggers.loadAvg]
+    -- , ppCurrent         = wrap " " "" . xmobarBorder "Top" "#8be9fd" 2
     }
   where
+    titleStyle   = magenta . shorten 70 . filterCurly
+    filterCurly  = filter (not . isCurly)
+    isCurly x    = x == '{' || x == '}'
+
     formatFocused   = wrap (white    "[") (white    "]") . magenta . ppWindow
     formatUnfocused = wrap (lowWhite "[") (lowWhite "]") . blue    . ppWindow
 
@@ -127,9 +137,10 @@ myXmobarPP = def
     yellow   = xmobarColor "#f1fa8c" ""
     red      = xmobarColor "#ff5555" ""
     lowWhite = xmobarColor "#bbbbbb" ""
+    cyan     = xmobarColor "cyan" ""
 
 
-myLogHook proc = dynamicLogWithPP $ DL.xmobarPP
+myXmobarLogHook2 proc = dynamicLogWithPP $ DL.xmobarPP
   { ppOutput  = hPutStrLn proc
   , ppCurrent = currentStyle
   , ppVisible = visibleStyle
@@ -150,23 +161,3 @@ myLogHook proc = dynamicLogWithPP $ DL.xmobarPP
     titleStyle   = xmobarColor "cyan" "" . shorten 100 . filterCurly
     filterCurly  = filter (not . isCurly)
     isCurly x    = x == '{' || x == '}'
-
-myLogHook2 proc = dynamicLogWithPP $ DL.defaultPP {
-            ppOutput = hPutStrLn proc
-          , ppTitle = xmobarColor "#119999" "" . shorten 12
-          , ppCurrent = xmobarColor "#229999" "" . wrap "[" "]"
-          , ppSep = "   "
-          , ppWsSep = " "
-          , ppLayout  = \x -> ""
-              --   (\ x -> case x of
-              -- "Spacing 6 Mosaic"                      -> "[:]"
-              -- "Spacing 6 Mirror Tall"                 -> "[M]"
-              -- "Spacing 6 Hinted Tabbed Simplest"      -> "[T]"
-              -- "Spacing 6 Full"                        -> "[ ]"
-              -- _                                       -> x )
-          , ppHiddenNoWindows = showNamedWorkspaces
-          }
-  where
-    showNamedWorkspaces wsId = if any (`elem` wsId) (['a'..'z'])
-      then wsId
-      else "_"
